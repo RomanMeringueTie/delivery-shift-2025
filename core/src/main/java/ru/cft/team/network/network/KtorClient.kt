@@ -1,4 +1,4 @@
-package ru.cft.team.network.client
+package ru.cft.team.network.network
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -11,12 +11,11 @@ import io.ktor.client.request.get
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
-import kotlinx.serialization.serializer
 import ru.cft.team.network.model.PackageTypeResponseModel
 import ru.cft.team.network.model.PointResponseModel
+import javax.inject.Inject
 
-
-class KtorClient {
+class KtorClient @Inject constructor() {
 
     private val BASE_URL = "https://shift-intensive.ru/api/delivery/"
 

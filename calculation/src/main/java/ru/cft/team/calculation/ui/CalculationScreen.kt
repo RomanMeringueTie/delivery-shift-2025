@@ -48,6 +48,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import ru.cft.team.calculation.R
 import ru.cft.team.calculation.presentation.CalculationScreenAction
 import ru.cft.team.calculation.presentation.CalculationScreenState
@@ -60,7 +61,7 @@ import ru.cft.team.network.model.Point
 
 
 @Composable
-fun CalculationScreen(viewModel: CalculationViewModel, onCalculate: () -> Unit) {
+fun CalculationScreen(viewModel: CalculationViewModel = hiltViewModel(), onCalculate: () -> Unit) {
 
     val state by viewModel.state.collectAsState()
 

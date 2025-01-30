@@ -2,13 +2,16 @@ package ru.cft.team.calculation.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import ru.cft.team.calculation.domain.GetPackageTypesUseCase
 import ru.cft.team.calculation.domain.GetPointsUseCase
+import javax.inject.Inject
 
-class CalculationViewModel(
+@HiltViewModel
+class CalculationViewModel @Inject constructor(
     private val getPointsUseCase: GetPointsUseCase,
     private val getPackageTypesUseCase: GetPackageTypesUseCase
 ) : ViewModel() {
