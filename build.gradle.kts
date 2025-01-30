@@ -3,4 +3,5 @@ plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.jetbrains.kotlin.android) apply false
     alias(libs.plugins.android.library) apply false
+    id("org.jetbrains.kotlin.plugin.compose") version "2.1.20-Beta1" apply false
 }

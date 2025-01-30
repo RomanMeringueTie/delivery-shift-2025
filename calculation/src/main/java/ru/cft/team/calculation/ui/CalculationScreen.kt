@@ -19,28 +19,27 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -50,18 +49,20 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ru.cft.team.calculation.R
+import ru.cft.team.calculation.presentation.CalculationScreenAction
+import ru.cft.team.calculation.presentation.CalculationScreenState
+import ru.cft.team.calculation.presentation.CalculationViewModel
+import ru.cft.team.calculation.presentation.PackageTypesState
+import ru.cft.team.calculation.presentation.PointsState
+import ru.cft.team.network.model.PackageType
+import ru.cft.team.network.model.Point
+
+
 
 @Composable
-fun CalculationScreen(onCalculate: () -> Unit) {
-    // Позже через viewmodel будем получать
-    val cityList = listOf("Москва", "Санкт-Петербург", "Новосибирск", "Томск")
-    val packageSizeList = listOf("Конверт", "Тележка", "Короб")
-    val sendCityExtended = remember { mutableStateOf(false) }
-    val receiveCityExtended = remember { mutableStateOf(false) }
-    val packageSizeExtended = remember { mutableStateOf(false) }
-    val sendCityText = remember { mutableStateOf(cityList.first()) }
-    val receiveCityText = remember { mutableStateOf(cityList.first()) }
-    val packageSizeText = remember { mutableStateOf(packageSizeList.first()) }
+fun CalculationScreen(viewModel: CalculationViewModel, onCalculate: () -> Unit) {
+
+    val state by viewModel.state.collectAsState()
 
     Column(
         modifier = Modifier
@@ -101,37 +102,42 @@ fun CalculationScreen(onCalculate: () -> Unit) {
                 fontWeight = FontWeight.ExtraBold,
                 textAlign = TextAlign.Center
             )
-            ItemPicker(
-                title = stringResource(R.string.send_city),
-                pickedText = sendCityText,
-                items = cityList,
-                extended = sendCityExtended,
-                dropdownHeader = stringResource(id = R.string.where),
-                imageVector = Icons.Default.LocationOn
-            )
-            ItemPicker(
-                title = stringResource(R.string.receive_city),
-                pickedText = receiveCityText,
-                items = cityList,
-                extended = receiveCityExtended,
-                dropdownHeader = stringResource(id = R.string.where),
-                imageVector = Icons.Default.Place
-            )
-            ItemPicker(
-                title = stringResource(R.string.package_size),
-                pickedText = packageSizeText,
-                items = packageSizeList,
-                extended = packageSizeExtended,
-                dropdownHeader = stringResource(R.string.package_size),
-                imageVector = Icons.Default.Email
-            )
+
+            when (state.pointsState) {
+                is PointsState.Content -> {
+                    PointContent(state = state, viewModel = viewModel)
+                }
+
+                is PointsState.Failure -> {
+                    Text(text = (state.pointsState as PointsState.Failure).message)
+                }
+
+                PointsState.Loading -> {
+                    CircularProgressIndicator()
+                }
+            }
+            when (state.packageTypesState) {
+                is PackageTypesState.Content -> {
+                    PackageContent(state = state, viewModel = viewModel)
+                }
+
+                is PackageTypesState.Failure -> {
+                    AlertDialog(
+                        onDismissRequest = { },
+                        confirmButton = { viewModel.onAction(CalculationScreenAction.RetryLoad) },
+                        text = { Text((state.packageTypesState as PackageTypesState.Failure).message) })
+                }
+
+                PackageTypesState.Loading -> {
+                    CircularProgressIndicator()
+                }
+            }
+
             Button(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 20.dp, bottom = 10.dp)
-                    .height(60.dp),
-                onClick = onCalculate,
-                colors = ButtonColors(
+                    .height(60.dp), onClick = onCalculate, colors = ButtonColors(
                     contentColor = Color.White,
                     containerColor = colorResource(id = R.color.brand),
                     disabledContentColor = Color.White,
@@ -142,6 +148,50 @@ fun CalculationScreen(onCalculate: () -> Unit) {
             }
         }
     }
+}
+
+@Composable
+fun PointContent(state: CalculationScreenState, viewModel: CalculationViewModel) {
+    PointItemPicker(
+        title = stringResource(R.string.send_city),
+        pickedText = state.pickedSendCity.name,
+        items = (state.pointsState as PointsState.Content).list,
+        extended = state.sendCityExtended,
+        onExtend = { viewModel.onAction(CalculationScreenAction.ChangeSendCityExtended) },
+        onPick = { viewModel.onAction(CalculationScreenAction.SetPickedSendCity(it)) },
+    )
+    PointItemPicker(
+        title = stringResource(R.string.receive_city),
+        pickedText = state.pickedReceiveCity.name,
+        items = state.pointsState.list,
+        extended = state.receiveCityExtended,
+        onExtend = { viewModel.onAction(CalculationScreenAction.ChangeReceiveCityExtended) },
+        onPick = {
+            viewModel.onAction(
+                CalculationScreenAction.SetPickedReceiveCity(
+                    it
+                )
+            )
+        },
+    )
+}
+
+@Composable
+fun PackageContent(state: CalculationScreenState, viewModel: CalculationViewModel) {
+    PackageItemPicker(
+        title = stringResource(R.string.package_size),
+        pickedText = state.pickedPackageType.name,
+        items = (state.packageTypesState as PackageTypesState.Content).list,
+        extended = state.packageTypeExtended,
+        onExtend = { viewModel.onAction(CalculationScreenAction.ChangePackageTypeExtended) },
+        onPick = {
+            viewModel.onAction(
+                CalculationScreenAction.SetPickedPackageType(
+                    it
+                )
+            )
+        },
+    )
 }
 
 @Composable
@@ -177,7 +227,7 @@ fun QRCard() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(end = 10.dp),
-                text = "Наведите камеру телефона на QR‑код",
+                text = stringResource(R.string.point_camera_on_qr),
                 textAlign = TextAlign.Start,
                 fontSize = 14.sp,
                 color = Color.Gray
@@ -187,37 +237,33 @@ fun QRCard() {
 }
 
 @Composable
-fun ItemPicker(
+fun PointItemPicker(
     title: String,
-    pickedText: MutableState<String>,
-    items: List<String>,
-    extended: MutableState<Boolean>,
-    dropdownHeader: String,
-    imageVector: ImageVector
+    pickedText: String,
+    extended: Boolean,
+    items: List<Point>,
+    onPick: (Point) -> Unit,
+    onExtend: () -> Unit
 ) {
     Text(text = title, fontSize = 14.sp, textAlign = TextAlign.Start)
-    Card(
-        colors = CardColors(
-            contentColor = Color.Black,
-            containerColor = Color.White,
-            disabledContentColor = Color.Black,
-            disabledContainerColor = Color.White
-        ),
+    Card(colors = CardColors(
+        contentColor = Color.Black,
+        containerColor = Color.White,
+        disabledContentColor = Color.Black,
+        disabledContainerColor = Color.White
+    ),
         modifier = Modifier
             .fillMaxWidth()
             .border(1.dp, Color.Gray, RoundedCornerShape(5.dp))
-            .clickable { extended.value = !extended.value }
-    ) {
+            .clickable { onExtend() }) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(10.dp),
         ) {
-            Image(imageVector, "pickerIcon")
+            Image(Icons.Default.Place, "pickerIcon")
             Text(
-                modifier = Modifier.padding(start = 5.dp),
-                text = pickedText.value,
-                fontSize = 16.sp
+                modifier = Modifier.padding(start = 5.dp), text = pickedText, fontSize = 16.sp
             )
             Image(
                 modifier = Modifier.fillMaxWidth(),
@@ -227,32 +273,78 @@ fun ItemPicker(
             )
         }
     }
-    Hints(items = items, pickedText = pickedText)
-    DropdownList(
+    PointHints(items = items) {
+        onPick(it)
+    }
+    PointDropdownList(
         items = items,
-        pickedText = pickedText,
         extended = extended,
-        dropdownHeader = dropdownHeader
+        onPick = { onPick(it) },
+        onExpand = onExtend
     )
 }
 
 @Composable
-fun DropdownList(
-    items: List<String>,
-    pickedText: MutableState<String>,
-    extended: MutableState<Boolean>,
-    dropdownHeader: String
+fun PackageItemPicker(
+    title: String,
+    pickedText: String,
+    extended: Boolean,
+    items: List<PackageType>,
+    onPick: (PackageType) -> Unit,
+    onExtend: () -> Unit
+) {
+    Text(text = title, fontSize = 14.sp, textAlign = TextAlign.Start)
+    Card(colors = CardColors(
+        contentColor = Color.Black,
+        containerColor = Color.White,
+        disabledContentColor = Color.Black,
+        disabledContainerColor = Color.White
+    ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, Color.Gray, RoundedCornerShape(5.dp))
+            .clickable { onExtend() }) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp),
+        ) {
+            Image(Icons.Default.Email, "pickerIcon")
+            Text(
+                modifier = Modifier.padding(start = 5.dp), text = pickedText, fontSize = 16.sp
+            )
+            Image(
+                modifier = Modifier.fillMaxWidth(),
+                imageVector = Icons.Default.KeyboardArrowDown,
+                contentDescription = "arrowDown",
+                alignment = Alignment.CenterEnd
+            )
+        }
+    }
+    PackageDropdownList(
+        items = items,
+        extended = extended,
+        onPick = { onPick(it) },
+        onExpand = onExtend
+    )
+}
+
+@Composable
+fun PointDropdownList(
+    items: List<Point>,
+    onPick: (Point) -> Unit,
+    onExpand: () -> Unit,
+    extended: Boolean,
 ) {
     DropdownMenu(
         modifier = Modifier
             .fillMaxSize()
             .padding(top = 20.dp, start = 10.dp, end = 10.dp),
-        expanded = extended.value,
-        onDismissRequest = { extended.value = !extended.value }) {
+        expanded = extended,
+        onDismissRequest = onExpand
+    ) {
         AnimatedVisibility(
-            visible = extended.value,
-            enter = fadeIn(),
-            exit = fadeOut()
+            visible = extended, enter = fadeIn(), exit = fadeOut()
         ) {
             Column {
                 Row(
@@ -262,22 +354,23 @@ fun DropdownList(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Image(
-                        imageVector = Icons.Default.Close,
+                    Image(imageVector = Icons.Default.Close,
                         contentDescription = "Close",
                         modifier = Modifier
                             .size(28.dp)
-                            .clickable { extended.value = !extended.value }
-                    )
+                            .clickable { onExpand() })
                     Text(
-                        text = dropdownHeader,
+                        text = stringResource(id = R.string.where),
                         fontSize = 28.sp,
                         fontWeight = FontWeight.ExtraBold
                     )
                 }
                 Spacer(modifier = Modifier.padding(10.dp))
-                items.forEach {
-                    DropdownItem(text = it, pickedText = pickedText, extended = extended)
+                items.forEach { item ->
+                    PointDropdownItem(
+                        point = item,
+                        onClick = { onPick(it); onExpand() }
+                    )
                 }
             }
         }
@@ -285,38 +378,89 @@ fun DropdownList(
 }
 
 @Composable
-fun DropdownItem(text: String, pickedText: MutableState<String>, extended: MutableState<Boolean>) {
-    DropdownMenuItem(
-        text = {
-            Row(horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(text = text, fontSize = 16.sp)
-                Image(
-                    modifier = Modifier.fillMaxWidth(),
-                    imageVector = Icons.Default.KeyboardArrowRight,
-                    contentDescription = "arrowRight",
-                    alignment = Alignment.CenterEnd
-                )
-            }
-        },
-        onClick = {
-            pickedText.value = text
-            extended.value = !extended.value
-        })
+fun PointDropdownItem(point: Point, onClick: (Point) -> Unit) {
+    DropdownMenuItem(text = {
+        Row(horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(text = point.name, fontSize = 16.sp)
+            Image(
+                modifier = Modifier.fillMaxWidth(),
+                imageVector = Icons.AutoMirrored.Default.KeyboardArrowRight,
+                contentDescription = "arrowRight",
+                alignment = Alignment.CenterEnd
+            )
+        }
+    }, onClick = { onClick(point) })
 }
 
 @Composable
-fun Hints(items: List<String>, pickedText: MutableState<String>) {
+fun PackageDropdownList(
+    items: List<PackageType>,
+    onPick: (PackageType) -> Unit,
+    onExpand: () -> Unit,
+    extended: Boolean,
+) {
+    DropdownMenu(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 20.dp, start = 10.dp),
+        expanded = extended,
+        onDismissRequest = onExpand
+    ) {
+        AnimatedVisibility(
+            visible = extended, enter = fadeIn(), exit = fadeOut()
+        ) {
+            Column {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Image(imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clickable { onExpand() })
+                    Text(
+                        text = stringResource(id = R.string.package_size),
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                }
+                Spacer(modifier = Modifier.padding(10.dp))
+                items.forEach { item ->
+                    PackageDropdownItem(
+                        point = item,
+                        onClick = { onPick(it); onExpand() }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PackageDropdownItem(point: PackageType, onClick: (PackageType) -> Unit) {
+    DropdownMenuItem(text = {
+        Text(
+            text = "${point.name}, ${point.length}x${point.width}x${point.height}",
+            fontSize = 16.sp
+        )
+    }, onClick = { onClick(point) })
+}
+
+@Composable
+fun PointHints(items: List<Point>, onCLick: (Point) -> Unit) {
     Row {
         for (i in 0 until 3) {
-            Text(
-                modifier = Modifier
-                    .clickable { pickedText.value = items[i] }
-                    .padding(end = 5.dp),
-                text = items[i],
+            Text(modifier = Modifier
+                .clickable { onCLick(items[i]) }
+                .padding(end = 5.dp),
+                text = items[i].name,
                 fontSize = 14.sp,
                 textDecoration = TextDecoration.Underline,
-                color = Color.Gray
-            )
+                color = Color.Gray)
         }
     }
 }

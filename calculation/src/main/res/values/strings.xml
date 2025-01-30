@@ -8,4 +8,5 @@
     <string name="send_city">Город отправки</string>
     <string name="receive_city">Город назначения</string>
     <string name="package_size">Размер посылки</string>
+    <string name="point_camera_on_qr">Наведите камеру телефона на QR‑код</string>
 </resources>
