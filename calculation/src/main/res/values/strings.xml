@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">calculation</string>
+    <string name="calc_screen_header">Мы доставим ваш заказ</string>
+    <string name="calc_screen_subtitle">Отправляйте посылки в приложении Шифт Delivery</string>
+    <string name="calc_delivery">Рассчитать доставку</string>
+    <string name="where">Куда</string>
+    <string name="calculate">Рассчитать</string>
+    <string name="send_city">Город отправки</string>
+    <string name="receive_city">Город назначения</string>
+    <string name="package_size">Размер посылки</string>
+    <string name="point_camera_on_qr">Наведите камеру телефона на QR‑код</string>
 </resources>
