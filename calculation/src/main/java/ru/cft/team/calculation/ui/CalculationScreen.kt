@@ -40,15 +40,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import ru.cft.team.calculation.R
 import ru.cft.team.calculation.presentation.CalculationScreenAction
 import ru.cft.team.calculation.presentation.CalculationScreenState
@@ -59,9 +59,8 @@ import ru.cft.team.network.model.PackageType
 import ru.cft.team.network.model.Point
 
 
-
 @Composable
-fun CalculationScreen(viewModel: CalculationViewModel = hiltViewModel(), onCalculate: () -> Unit) {
+fun CalculationScreen(viewModel: CalculationViewModel, onCalculate: () -> Unit) {
 
     val state by viewModel.state.collectAsState()
 
@@ -73,10 +72,10 @@ fun CalculationScreen(viewModel: CalculationViewModel = hiltViewModel(), onCalcu
                     id = R.color.secondary
                 )
             )
-            .padding(top = 32.dp, start = 16.dp, end = 16.dp, bottom = 32.dp)
+            .padding(top = 16.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
     ) {
         Text(
-            modifier = Modifier.padding(bottom = 15.dp),
+            modifier = Modifier.padding(bottom = 10.dp),
             text = stringResource(R.string.calc_screen_header),
             fontSize = 28.sp,
             fontWeight = FontWeight.ExtraBold
@@ -96,7 +95,7 @@ fun CalculationScreen(viewModel: CalculationViewModel = hiltViewModel(), onCalcu
         ) {
             Text(
                 modifier = Modifier
-                    .padding(top = 20.dp, bottom = 20.dp)
+                    .padding(top = 16.dp, bottom = 16.dp)
                     .fillMaxWidth(),
                 text = stringResource(R.string.calc_delivery),
                 fontSize = 24.sp,
@@ -137,7 +136,7 @@ fun CalculationScreen(viewModel: CalculationViewModel = hiltViewModel(), onCalcu
             Button(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 20.dp, bottom = 10.dp)
+                    .padding(top = 20.dp)
                     .height(60.dp), onClick = onCalculate, colors = ButtonColors(
                     contentColor = Color.White,
                     containerColor = colorResource(id = R.color.brand),
@@ -215,12 +214,12 @@ fun QRCard() {
             ) {
                 Image(
                     modifier = Modifier.size(60.dp),
-                    painter = painterResource(id = R.drawable.box),
+                    imageVector = ImageVector.vectorResource(id = R.drawable.box),
                     contentDescription = "box"
                 )
                 Image(
                     modifier = Modifier.size(56.dp),
-                    painter = painterResource(id = R.drawable.qr),
+                    imageVector = ImageVector.vectorResource(id = R.drawable.qr),
                     contentDescription = "qr"
                 )
             }
